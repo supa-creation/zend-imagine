@@ -154,7 +154,58 @@ final class Image extends AbstractImage
 
         return $this;
     }
+    
+    final public function thumbnailStrict(BoxInterface $size, $mode = ImageInterface::THUMBNAIL_INSET, $filter = ImageInterface::FILTER_UNDEFINED, $background = array(255, 255, 255, 1))
+    {
+        if(!$filter) {
+            $filter = ImageInterface::FILTER_UNDEFINED;
+        }
+        
+        $thumbnail = $this->thumbnail($size, $mode, $filter);
+        
+        $thumbWidth = $thumbnail->getSize()->getWidth();
+        $thumbHeight = $thumbnail->getSize()->getHeight();
+        
+        $boxWidth = $size->getWidth();
+        $boxHeight = $size->getHeight();
+        
+        $container = $thumbnail->createImage($size, 'resize');
 
+        $color = imagecolorallocatealpha($container, $background[0], $background[1], $background[2], $background[3]);
+        imagefill($container, 0, 0, $color);
+
+        imagedestroy($this->resource);
+        $this->resource = $container;
+            
+        if($thumbWidth < $boxWidth || $thumbHeight < $boxHeight) {
+            $this->paste($thumbnail, new Point(($boxWidth - $thumbWidth) / 2, ($boxHeight - $thumbHeight) / 2));
+        } else {
+            $this->paste($thumbnail, new Point(0, 0));
+        }
+        
+        return $this;
+    }
+    
+    final public function resizeMaxHeight($maxHeight = 100, $filter = ImageInterface::FILTER_UNDEFINED)
+    {
+        $width = imagesx($this->resource);
+        $height = imagesy($this->resource);
+        
+        $size = new Box($width * $maxHeight / $height, $maxHeight);
+        
+        return $this->resize($size, $filter);
+    }
+    
+    final public function resizeMaxWidth($maxWidth = 100, $filter = ImageInterface::FILTER_UNDEFINED)
+    {
+        $width = imagesx($this->resource);
+        $height = imagesy($this->resource);
+        
+        $size = new Box($maxWidth, $height * $maxWidth / $width);
+        
+        return $this->resize($size, $filter);
+    }
+    
     /**
      * {@inheritdoc}
      *
